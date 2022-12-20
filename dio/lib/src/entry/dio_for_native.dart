@@ -72,6 +72,7 @@ class DioForNative with DioMixin implements Dio {
     String lengthHeader = Headers.contentLengthHeader,
     data,
     Options? options,
+        bool isReGet = false,
   }) async {
     // We set the `responseType` to [ResponseType.STREAM] to retrieve the
     // response stream.
@@ -126,7 +127,7 @@ class DioForNative with DioMixin implements Dio {
     // Shouldn't call file.writeAsBytesSync(list, flush: flush),
     // because it can write all bytes by once. Consider that the
     // file with a very big size(up 1G), it will be expensive in memory.
-    var raf = file.openSync(mode: FileMode.write);
+    var raf = file.openSync(mode: isReGet? FileMode.writeOnlyAppend : FileMode.write);
 
     //Create a Completer to notify the success/error state.
     var completer = Completer<Response>();
@@ -152,9 +153,9 @@ class DioForNative with DioMixin implements Dio {
     var closed = false;
     Future _closeAndDelete() async {
       if (!closed) {
-        closed = true;
         await asyncWrite;
         await raf.close();
+        closed = true;
         if (deleteOnError && file.existsSync()) {
           await file.delete();
         }
@@ -179,6 +180,14 @@ class DioForNative with DioMixin implements Dio {
           try {
             await subscription.cancel();
           } finally {
+
+            if (!closed){
+              await asyncWrite;
+              await raf.close();
+              closed = true;
+            }
+
+
             completer.completeError(DioMixin.assureDioError(
               err,
               response.requestOptions,
@@ -197,12 +206,24 @@ class DioForNative with DioMixin implements Dio {
             e,
             response.requestOptions,
           ));
+        } finally {
+          if (!closed){
+            await asyncWrite;
+            await raf.close();
+            closed = true;
+          }
         }
       },
       onError: (e) async {
         try {
           await _closeAndDelete();
         } finally {
+          if (!closed){
+            await asyncWrite;
+            await raf.close();
+            closed = true;
+          }
+
           completer.completeError(DioMixin.assureDioError(
             e,
             response.requestOptions,
@@ -213,9 +234,18 @@ class DioForNative with DioMixin implements Dio {
     );
     // ignore: unawaited_futures
     cancelToken?.whenCancel.then((_) async {
-      await subscription.cancel();
-      await _closeAndDelete();
+      try {
+        await subscription.cancel();
+        await _closeAndDelete();
+      } finally{
+        if (!closed){
+          await asyncWrite;
+          await raf.close();
+          closed = true;
+        }
+      }
     });
+
 
     if (response.requestOptions.receiveTimeout > 0) {
       future = future

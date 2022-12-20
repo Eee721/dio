@@ -250,6 +250,7 @@ abstract class Dio {
     String lengthHeader = Headers.contentLengthHeader,
     data,
     Options? options,
+        bool isReGet = false,
   });
 
   ///  Download the file and save it in local. The default http method is "GET",
