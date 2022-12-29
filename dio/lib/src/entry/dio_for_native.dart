@@ -181,7 +181,7 @@ class DioForNative with DioMixin implements Dio {
         asyncWrite = raf.writeFrom(data).then((_raf) {
           // Notify progress
           received += data.length;
-          _speedCount += received;
+          _speedCount += data.length;
           onReceiveProgress?.call(received, total,_speed>0?_speed:_speedCount);
 
           raf = _raf;
