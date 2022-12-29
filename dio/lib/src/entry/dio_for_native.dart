@@ -66,6 +66,7 @@ class DioForNative with DioMixin implements Dio {
     String urlPath,
     savePath, {
     ProgressCallback? onReceiveProgress,
+        int bandwidth = 0,
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
     bool deleteOnError = true,
@@ -162,6 +163,17 @@ class DioForNative with DioMixin implements Dio {
       }
     }
 
+    int _speedCount = 0;
+    int _speed = 0;
+    Timer? speedTimer;
+    // double _duration = 64.0;
+
+      speedTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        _speed = _speedCount;
+        _speedCount = 0;
+      });
+
+
     subscription = stream.listen(
       (data) {
         subscription.pause();
@@ -169,15 +181,31 @@ class DioForNative with DioMixin implements Dio {
         asyncWrite = raf.writeFrom(data).then((_raf) {
           // Notify progress
           received += data.length;
-
-          onReceiveProgress?.call(received, total);
+          _speedCount += received;
+          onReceiveProgress?.call(received, total,_speed>0?_speed:_speedCount);
 
           raf = _raf;
           if (cancelToken == null || !cancelToken.isCancelled) {
-            subscription.resume();
+            if (bandwidth > 0) {
+              fd() {
+                if (_speedCount >= bandwidth) {
+                  Future.delayed(const Duration(milliseconds: 4)).then((value) {
+                    fd();
+                  });
+                }
+                else {
+                  subscription.resume();
+                }
+              }
+              fd();
+            }
+            else{
+              subscription.resume();
+            }
           }
         }).catchError((err, StackTrace stackTrace) async {
           try {
+            speedTimer?.cancel();
             await subscription.cancel();
           } finally {
 
@@ -197,6 +225,7 @@ class DioForNative with DioMixin implements Dio {
       },
       onDone: () async {
         try {
+          speedTimer?.cancel();
           await asyncWrite;
           closed = true;
           await raf.close();
@@ -216,6 +245,7 @@ class DioForNative with DioMixin implements Dio {
       },
       onError: (e) async {
         try {
+          speedTimer?.cancel();
           await _closeAndDelete();
         } finally {
           if (!closed){
@@ -235,6 +265,7 @@ class DioForNative with DioMixin implements Dio {
     // ignore: unawaited_futures
     cancelToken?.whenCancel.then((_) async {
       try {
+        speedTimer?.cancel();
         await subscription.cancel();
         await _closeAndDelete();
       } finally{
@@ -253,6 +284,7 @@ class DioForNative with DioMixin implements Dio {
         milliseconds: response.requestOptions.receiveTimeout,
       ))
           .catchError((Object err) async {
+        speedTimer?.cancel();
         await subscription.cancel();
         await _closeAndDelete();
         if (err is TimeoutException) {

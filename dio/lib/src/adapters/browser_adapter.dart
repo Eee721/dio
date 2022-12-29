@@ -104,7 +104,7 @@ class BrowserHttpClientAdapter implements HttpClientAdapter {
       if (options.onSendProgress != null &&
           event.loaded != null &&
           event.total != null) {
-        options.onSendProgress!(event.loaded!, event.total!);
+        options.onSendProgress!(event.loaded!, event.total!,0);
       }
     });
 
@@ -129,7 +129,7 @@ class BrowserHttpClientAdapter implements HttpClientAdapter {
       }
       if (options.onReceiveProgress != null) {
         if (event.loaded != null && event.total != null) {
-          options.onReceiveProgress!(event.loaded!, event.total!);
+          options.onReceiveProgress!(event.loaded!, event.total!,0);
         }
       }
     });

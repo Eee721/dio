@@ -106,7 +106,7 @@ class DefaultTransformer extends Transformer {
         sink.add(data);
         if (showDownloadProgress) {
           received += data.length;
-          options.onReceiveProgress?.call(received, length);
+          options.onReceiveProgress?.call(received, length , 0);
         }
       },
     ));

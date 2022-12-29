@@ -30,7 +30,7 @@ StreamTransformer<S, Uint8List> _transform<S extends List<int>>(
         if (length != null) {
           complete += data.length;
           if (options.onSendProgress != null) {
-            options.onSendProgress!(complete, length);
+            options.onSendProgress!(complete, length , 0);
           }
         }
       }

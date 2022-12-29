@@ -352,6 +352,7 @@ abstract class DioMixin implements Dio {
     String urlPath,
     savePath, {
     ProgressCallback? onReceiveProgress,
+        int bandwidth = 0,
     Map<String, dynamic>? queryParameters,
     CancelToken? cancelToken,
     bool deleteOnError = true,
