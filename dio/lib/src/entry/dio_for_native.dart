@@ -167,8 +167,8 @@ class DioForNative with DioMixin implements Dio {
     int _speed = 0;
     Timer? speedTimer;
     // double _duration = 64.0;
-
-      speedTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    final _speedSeconds = 4 ;
+      speedTimer = Timer.periodic(Duration(seconds: _speedSeconds), (timer) {
         _speed = _speedCount;
         _speedCount = 0;
       });
@@ -182,14 +182,14 @@ class DioForNative with DioMixin implements Dio {
           // Notify progress
           received += data.length;
           _speedCount += data.length;
-          onReceiveProgress?.call(received, total,_speed>0?_speed:_speedCount);
+          onReceiveProgress?.call(received, total,((_speed>0?_speed:_speedCount)/_speedSeconds).ceil());
 
           raf = _raf;
           if (cancelToken == null || !cancelToken.isCancelled) {
             if (bandwidth > 0) {
               fd() {
-                if (_speedCount >= bandwidth) {
-                  Future.delayed(const Duration(milliseconds: 4)).then((value) {
+                if (_speedCount >= bandwidth * _speedSeconds) {
+                  Future.delayed(const Duration(milliseconds: 16)).then((value) {
                     fd();
                   });
                 }
