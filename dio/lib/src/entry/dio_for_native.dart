@@ -170,9 +170,15 @@ class DioForNative with DioMixin implements Dio {
     // double _duration = 64.0;
     // final _speedSeconds = 1 ;
       speedTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-        var final_speed = min(_speedCount , bandwidth);
-        _speed = final_speed;
-        _speedCount -= final_speed;
+        if (bandwidth>0){
+          var final_speed = min(_speedCount , bandwidth);
+          _speed = final_speed;
+          _speedCount -= final_speed;
+        }
+        else{
+          _speed = _speedCount;
+          _speedCount = 0;
+        }
       });
 
 
