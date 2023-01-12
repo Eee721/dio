@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import '../adapter.dart';
 import '../cancel_token.dart';
 import '../dio_mixin.dart';
@@ -167,10 +168,11 @@ class DioForNative with DioMixin implements Dio {
     int _speed = 0;
     Timer? speedTimer;
     // double _duration = 64.0;
-    final _speedSeconds = 4 ;
-      speedTimer = Timer.periodic(Duration(seconds: _speedSeconds), (timer) {
-        _speed = _speedCount;
-        _speedCount = 0;
+    // final _speedSeconds = 1 ;
+      speedTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+        var final_speed = min(_speedCount , bandwidth);
+        _speed = final_speed;
+        _speedCount -= final_speed;
       });
 
 
@@ -182,13 +184,13 @@ class DioForNative with DioMixin implements Dio {
           // Notify progress
           received += data.length;
           _speedCount += data.length;
-          onReceiveProgress?.call(received, total,((_speed>0?_speed:_speedCount)/_speedSeconds).ceil());
+          onReceiveProgress?.call(received, total,((_speed>0?_speed:_speedCount)).ceil());
 
           raf = _raf;
           if (cancelToken == null || !cancelToken.isCancelled) {
             if (bandwidth > 0) {
               fd() {
-                if (_speedCount >= bandwidth * _speedSeconds) {
+                if (_speedCount >= bandwidth) {
                   Future.delayed(const Duration(milliseconds: 16)).then((value) {
                     fd();
                   });
